@@ -3,12 +3,15 @@ package goengine
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
-	"github.com/garyburd/redigo/redis"
 	"github.com/satori/go.uuid"
 	"net/http"
 	"time"
 )
+
+type SessionStore interface {
+	Get(string) (*map[string]interface{}, error)
+	Save(string, *map[string]interface{}, int) error
+}
 
 func GenerateSid() string {
 	md5Gen := md5.New()
@@ -57,7 +60,7 @@ func (this *Session) Save(maxAge int) {
  * @time   2017-06-10
  */
 type SessionManager struct {
-	conn          redis.Conn
+	storer        SessionStore
 	sessionName   string
 	cookiePrefix  string
 	sessionPrefix string
@@ -66,10 +69,9 @@ type SessionManager struct {
 	Secure        bool
 }
 
-func InitSessionManager(redisConn redis.Conn, sessName string, cookiePrefix string, sessionPrefix string, domain string) *SessionManager {
-
-	ret := &SessionManager{
-		conn:          redisConn,
+func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) *SessionManager {
+	return &SessionManager{
+		storer:        storer,
 		sessionName:   sessName,
 		cookiePrefix:  cookiePrefix,
 		sessionPrefix: sessionPrefix,
@@ -77,7 +79,6 @@ func InitSessionManager(redisConn redis.Conn, sessName string, cookiePrefix stri
 		MaxAge:        3600 * 24,
 		Secure:        true,
 	}
-	return ret
 }
 
 func (this *SessionManager) getExpirationTime(maxAge int) time.Time {
@@ -96,10 +97,10 @@ func (this *SessionManager) Get(res *http.ResponseWriter, req *http.Request) *Se
 		sid = cookie.Value[len(this.cookiePrefix):]
 		sessionInfo.sid = sid
 
-		jsonSession, err := redis.String(this.conn.Do("GET", this.sessionPrefix+sid))
+		valMap, err := this.storer.Get(this.sessionPrefix + sid)
 
 		if nil == err {
-			json.Unmarshal([]byte(jsonSession), &(sessionInfo.store))
+			sessionInfo.store = *valMap
 			return sessionInfo
 		}
 	}
@@ -123,11 +124,5 @@ func (this *SessionManager) Save(session *Session, maxAge int) error {
 		Expires:  this.getExpirationTime(maxAge),
 	}
 	http.SetCookie(*session.res, cookie)
-	buf, err := json.Marshal(session.store)
-	if nil != err {
-		return err
-	}
-	_, err = redis.String(this.conn.Do("SETEX", this.sessionPrefix+session.sid, maxAge, string(buf)))
-
-	return err
+	return this.storer.Save(this.sessionPrefix + session.sid, &(session.store), maxAge)
 }
