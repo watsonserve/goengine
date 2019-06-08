@@ -44,5 +44,5 @@ func (this *RedisStore) Save(key string, store *map[string]interface{}, maxAge i
 	if nil != err {
 		return err
 	}
-	return this.client.Set(key, string(buf), time.Duration(maxAge)).Err()
+	return this.client.Set(key, string(buf), time.Duration(maxAge) * time.Second).Err()
 }
