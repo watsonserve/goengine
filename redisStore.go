@@ -16,6 +16,9 @@ func NewRedisStore(Addr string, Password string, DB int) *RedisStore {
 		Password: Password, // no password set
 		DB:       DB,       // use default DB
 	})
+	if nil == client {
+		return nil
+	}
 	return &RedisStore{
 		client: client,
 	}

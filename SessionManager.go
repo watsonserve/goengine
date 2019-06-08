@@ -47,11 +47,11 @@ func (this *Session) Get(key string) interface{} {
 	return nil
 }
 
-func (this *Session) Save(maxAge int) {
+func (this *Session) Save(maxAge int) error {
 	if 0 == maxAge {
 		maxAge = this.sm.MaxAge
 	}
-	this.sm.Save(this, maxAge)
+	return this.sm.Save(this, maxAge)
 }
 
 /**
