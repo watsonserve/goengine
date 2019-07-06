@@ -3,7 +3,6 @@ package goengine
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/satori/go.uuid"
 	"net/http"
 	"time"
 )
@@ -11,16 +10,6 @@ import (
 type SessionStore interface {
 	Get(string) (*map[string]interface{}, error)
 	Save(string, *map[string]interface{}, int) error
-}
-
-func GenerateSid() string {
-	md5Gen := md5.New()
-	uuid_v1, _ := uuid.NewV1()
-	uuid_v4, _ := uuid.NewV4()
-
-	md5Gen.Write([]byte(uuid_v1.String() + "-" + uuid_v4.String()))
-	cipherStr := md5Gen.Sum(nil)
-	return hex.EncodeToString(cipherStr)
 }
 
 /**
