@@ -1,8 +1,6 @@
 package goengine
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"net/http"
 	"time"
 )
