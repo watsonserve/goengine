@@ -5,6 +5,9 @@ import (
     "database/sql/driver"
 )
 
+type ActionFunc func(http.ResponseWriter, *Session, *http.Request)
+type FilterFunc func(http.ResponseWriter, *Session, *http.Request) bool
+
 type NullTime struct {
     Time  time.Time
     Valid bool
