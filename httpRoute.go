@@ -8,9 +8,6 @@ import (
 	"syscall"
 )
 
-type ActionFunc func(http.ResponseWriter, *Session, *http.Request)
-type FilterFunc func(http.ResponseWriter, *Session, *http.Request) bool
-
 type HttpRoute struct {
 	sessionManager *SessionManager
 	index          map[string]ActionFunc
