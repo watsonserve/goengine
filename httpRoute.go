@@ -5,13 +5,19 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"syscall"
 )
 
+type catcher_t {
+	route  Regexp
+	handle ActionFunc
+}
+
 type HttpRoute struct {
-	sessionManager *SessionManager
+	filters_t
 	index          map[string]ActionFunc
-	filter         []FilterFunc
+	catcher        []*catcher_t
 }
 
 func InitHttpRoute(sessionManager *SessionManager) *HttpRoute {
@@ -21,53 +27,39 @@ func InitHttpRoute(sessionManager *SessionManager) *HttpRoute {
 	}
 }
 
-func (this *HttpRoute) Use(handle FilterFunc) {
-	this.filter = append(this.filter, handle)
-}
-
 func (this *HttpRoute) Set(path string, handle ActionFunc) {
 	this.index[path] = handle
 }
 
-func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	err := req.ParseForm()
-	if nil != err {
-		res.WriteHeader(500)
-		res.Write([]byte(err.Error()))
-	}
+func (this *HttpRoute) SetWith(path string, handle ActionFunc) {
+	route := regexp.MustCompile(path)
 
+	append(this.catcher, &catcher_t{
+		route: route,
+		handle: handle,
+	})
+}
+
+func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req *http.Request) bool {
 	handle := this.index[req.URL.Path]
+	if nil == handle {
+		for i := range this.catcher {
+			catcher := this.catcher[i]
+			if catcher.route.MatchString(req.URL.Path) {
+				handle = catcher.handle
+				break
+			}
+		}
+	}
 	if nil == handle {
 		res.WriteHeader(404)
 		res.Write([]byte(req.URL.Path + " not found"))
 		return
 	}
 
-	session := this.sessionManager.Get(&res, req)
-
-	header := res.Header()
-	header.Set("Cache-Control", "no-cache")
-
-	for i := range this.filter {
-		if !this.filter[i](res, session, req) {
-			return
-		}
-	}
-
-	handle(res, session, req)
-}
-
-func (this *HttpRoute) ListenUnix(addr string) {
-	_ = os.Remove(addr)
-	syscall.Umask(0111)
-	ln, err := net.Listen("unix", addr)
-	if nil != err {
-		log.Fatal("failed to start server", err)
+	if this.Range(res, session, req) {
 		return
 	}
 
-	if err = http.Serve(ln, this); nil != err {
-		log.Fatal("failed to start server", err)
-	}
-
+	handle(res, session, req)
 }
