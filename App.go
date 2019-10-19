@@ -31,12 +31,9 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	header := res.Header()
 	header.Set("Cache-Control", "no-cache")
 
-	for i := range this.filter {
-		if !this.filter[i](res, session, req) {
-			return
-		}
+	if this.Range(res, session, req) {
+		return
 	}
-
 	res.WriteHeader(404)
 	res.Write([]byte(req.URL.Path + " not found"))
 }
