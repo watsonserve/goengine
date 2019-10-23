@@ -26,7 +26,7 @@ func (this *HttpRoute) Set(path string, handle ActionFunc) {
 	this.index[path] = handle
 }
 
-func (this *HttpRoute) SetWith(path string, handle *HttpRoute) {
+func (this *HttpRoute) SetWith(path string, handle ActionFunc) {
 	route := regexp.MustCompile(path)
 
 	this.catcher = append(this.catcher, &catcher_t{
