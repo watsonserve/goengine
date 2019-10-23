@@ -1,11 +1,7 @@
 package goengine
 
 import (
-	"log"
-	"net"
 	"net/http"
-	"os"
-	"syscall"
 )
 
 type filters_t struct {

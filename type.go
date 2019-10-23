@@ -1,8 +1,9 @@
 package goengine
 
 import (
-    "time"
     "database/sql/driver"
+	"net/http"
+    "time"
 )
 
 type ActionFunc func(http.ResponseWriter, *Session, *http.Request)
