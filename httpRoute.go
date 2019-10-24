@@ -47,15 +47,12 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
 		}
 	}
 	if nil == handle {
-		res.WriteHeader(404)
-		res.Write([]byte(req.URL.Path + " not found"))
-		return false
+		return true
 	}
 
-	if this.Range(res, session, req) {
-		return false
+	if !this.Range(res, session, req) {
+		handle(res, session, req)
 	}
 
-	handle(res, session, req)
-	return true
+	return false
 }
