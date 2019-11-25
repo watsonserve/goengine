@@ -35,6 +35,13 @@ func (this *HttpRoute) SetWith(path string, handle ActionFunc) {
 	})
 }
 
+func (this *HttpRoute) SetRegexp(route *regexp.Regexp, handle ActionFunc) {
+	this.catcher = append(this.catcher, &catcher_t{
+		route: route,
+		handle: handle,
+	})
+}
+
 func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req *http.Request) bool {
 	handle := this.index[req.URL.Path]
 	if nil == handle {
