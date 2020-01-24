@@ -3,7 +3,6 @@ package goengine
 import (
 	"net/http"
 	"regexp"
-	"fmt"
 )
 
 type catcher_t struct {
@@ -11,10 +10,17 @@ type catcher_t struct {
 	handle ActionFunc
 }
 
+type sub_router_t struct {
+	path  string
+	length int
+	handle FilterFunc
+}
+
 type HttpRoute struct {
 	filters_t
 	index          map[string]ActionFunc
 	catcher        []*catcher_t
+	subRouter      []*sub_router_t
 }
 
 func InitHttpRoute() *HttpRoute {
@@ -39,17 +45,16 @@ func (this *HttpRoute) SetRegexp(route *regexp.Regexp, handle ActionFunc) {
 }
 
 func (this *HttpRoute) UseRouter(path string, router *HttpRoute) {
-	route := regexp.MustCompile(path)
-	this.Use(func(res http.ResponseWriter, session *Session, req *http.Request) bool {
-		if route.MatchString(req.URL.Path) {
-			return router.ServeHTTP(res, session, req)
-		}
-		return false
+	this.subRouter = append(this.subRouter, &sub_router_t{
+		path: path,
+		length: len(path),
+		handle: router.ServeHTTP,
 	})
 }
 
 func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req *http.Request) bool {
 	handle := this.index[req.URL.Path]
+	// 正则路由
 	if nil == handle {
 		for i := range this.catcher {
 			catcher := this.catcher[i]
@@ -59,13 +64,30 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
 			}
 		}
 	}
-	if nil == handle {
+	// 发现action
+	if nil != handle {
+		if !this.Range(res, session, req) {
+			handle(res, session, req)
+		}
+	
+		return false
+	}
+
+	var subRouteHandle FilterFunc = nil
+	// 子路由
+	for i := range this.subRouter {
+		subRouter := this.subRouter[i]
+		if subRouter.path == req.URL.Path[0: subRouter.length] {
+			subRouteHandle = subRouter.handle
+			break
+		}
+	}
+	// 没有匹配的子路由
+	if nil == subRouteHandle {
 		return true
 	}
-
 	if !this.Range(res, session, req) {
-		handle(res, session, req)
+		return subRouteHandle(res, session, req)
 	}
-
 	return false
 }
