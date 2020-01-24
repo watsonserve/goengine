@@ -19,6 +19,10 @@ func New(sessionManager *SessionManager) *GoEngine {
 	}
 }
 
+func (this *filters_t) UseRouter(router *HttpRoute) {
+	this.Use(router.ServeHTTP)
+}
+
 func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if nil != err {
