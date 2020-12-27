@@ -23,7 +23,7 @@ func ExampleGoengine() {
     router := goengine.InitHttpRoute()
     router.Use(filter)
     router.SetWith("^/foo/.+", actionFoo)
-    router.SetWith("^/bar", actionBar)
+    router.Set("/bar", actionBar)
 
     engine := goengine.New(nil)
     engine.UseRouter(router)
