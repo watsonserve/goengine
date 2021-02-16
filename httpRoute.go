@@ -52,7 +52,12 @@ func (this *HttpRoute) UseRouter(path string, router *HttpRoute) {
     })
 }
 
+// @return go on
 func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req *http.Request) bool {
+    if this.Range(res, session, req) {
+        // 已被拦截，停止流程
+        return false
+    }
     handle := this.index[req.URL.Path]
     // 正则路由
     if nil == handle {
@@ -66,10 +71,7 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     }
     // 发现action
     if nil != handle {
-        if !this.Range(res, session, req) {
-            handle(res, session, req)
-        }
-    
+        handle(res, session, req)
         return false
     }
 
@@ -87,8 +89,5 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     if nil == subRouteHandle {
         return true
     }
-    if !this.Range(res, session, req) {
-        return subRouteHandle(res, session, req)
-    }
-    return false
+    return subRouteHandle(res, session, req)
 }

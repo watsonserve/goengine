@@ -7,6 +7,8 @@ import (
 )
 
 type ActionFunc func(http.ResponseWriter, *Session, *http.Request)
+
+// @return go on
 type FilterFunc func(http.ResponseWriter, *Session, *http.Request) bool
 
 type NullTime struct {
