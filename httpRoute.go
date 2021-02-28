@@ -1,6 +1,7 @@
 package goengine
 
 import (
+    "log"
     "net/http"
     "regexp"
 )
@@ -80,13 +81,14 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     // 子路由
     for i := range this.subRouter {
         subRouter := this.subRouter[i]
-        if subRouter.length < path_len && subRouter.path == req.URL.Path[0: subRouter.length] {
+        if subRouter.length <= path_len && subRouter.path == req.URL.Path[0: subRouter.length] {
             subRouteHandle = subRouter.handle
             break
         }
     }
     // 没有匹配的子路由
     if nil == subRouteHandle {
+        log.Fatalf("- 404 Not Found - %s\n", req.URL.Path)
         return true
     }
     return subRouteHandle(res, session, req)
