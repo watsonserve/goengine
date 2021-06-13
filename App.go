@@ -5,9 +5,9 @@ import (
     "net"
     "net/http"
     "os"
-    // unix "golang.org/x/sys/unix"
 )
 
+// unix "golang.org/x/sys/unix"
 type GoEngine struct {
     filters_t
     sessionManager *SessionManager
