@@ -57,7 +57,8 @@ func (this *GoEngine) ListenUnix(addr string) {
 }
 
 func (this *GoEngine) ListenTCP(port string) {
-    if err = http.ListenAndServe(port, this); nil != err {
+    err := http.ListenAndServe(port, this)
+    if nil != err {
         log.Fatal("failed to start server", err)
     }
 }

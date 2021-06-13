@@ -1,6 +1,7 @@
 package goengine
 
 import (
+    "log"
     "net/http"
     "regexp"
 )
@@ -52,7 +53,12 @@ func (this *HttpRoute) UseRouter(path string, router *HttpRoute) {
     })
 }
 
+// @return go on
 func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req *http.Request) bool {
+    if this.Range(res, session, req) {
+        // 已被拦截，停止流程
+        return false
+    }
     handle := this.index[req.URL.Path]
     // 正则路由
     if nil == handle {
@@ -66,10 +72,7 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     }
     // 发现action
     if nil != handle {
-        if !this.Range(res, session, req) {
-            handle(res, session, req)
-        }
-    
+        handle(res, session, req)
         return false
     }
 
@@ -78,17 +81,15 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     // 子路由
     for i := range this.subRouter {
         subRouter := this.subRouter[i]
-        if subRouter.length < path_len && subRouter.path == req.URL.Path[0: subRouter.length] {
+        if subRouter.length <= path_len && subRouter.path == req.URL.Path[0: subRouter.length] {
             subRouteHandle = subRouter.handle
             break
         }
     }
     // 没有匹配的子路由
     if nil == subRouteHandle {
+        log.Fatalf("- 404 Not Found - %s\n", req.URL.Path)
         return true
     }
-    if !this.Range(res, session, req) {
-        return subRouteHandle(res, session, req)
-    }
-    return false
+    return subRouteHandle(res, session, req)
 }
