@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"log"
+	"github.com/watsonserve/goutils"
 	"net/smtp"
 )
 
@@ -105,6 +105,6 @@ func Test() {
 
 	err := mailContent.SendMail("smtp.watsonserve.com", "password")
 	if nil != err {
-		log.Println(err)
+		goutils.Printf("%s\n", err)
 	}
 }

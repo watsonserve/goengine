@@ -52,7 +52,6 @@ func (this *GoEngine) ListenUnix(addr string) {
     ln, err := net.Listen("unix", addr)
     if nil != err {
         log.Fatal("failed to start server", err)
-        return
     }
 
     if err = http.Serve(ln, this); nil != err {

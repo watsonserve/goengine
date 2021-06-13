@@ -3,7 +3,7 @@ package goengine
 import (
     "fmt"
     "errors"
-    "log"
+    "github.com/watsonserve/goutils"
     "net"
     "crypto/tls"
     "database/sql"
@@ -63,14 +63,14 @@ func ConnMongo(config map[string]string) *mgo.Database {
     )
     dialInfo, err := mgo.ParseURL(url)
     if nil != err {
-        log.Println(err)
+        goutils.Printf("%s\n", err)
         return nil
     }
 
     dialInfo.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
         conn, err := tls.Dial("tcp", addr.String(), &tls.Config{InsecureSkipVerify: true})
         if nil != err {
-            log.Println("connect mongodb: " + err.Error())
+            goutils.Printf("connect mongodb: %s\n", err.Error())
         }
         return conn, err
     }

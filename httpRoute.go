@@ -1,7 +1,7 @@
 package goengine
 
 import (
-    "log"
+    "github.com/watsonserve/goutils"
     "net/http"
     "regexp"
 )
@@ -88,7 +88,7 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     }
     // 没有匹配的子路由
     if nil == subRouteHandle {
-        log.Fatalf("- 404 Not Found - %s\n", req.URL.Path)
+        goutils.Errorf("- 404 Not Found - %s\n", req.URL.Path)
         return true
     }
     return subRouteHandle(res, session, req)
