@@ -8,8 +8,8 @@ import (
 
 func GenerateSid() string {
   md5Gen := md5.New()
-  uuid_v1, _ := uuid.NewV1()
-  uuid_v4, _ := uuid.NewV4()
+  uuid_v1 := uuid.NewV1()
+  uuid_v4 := uuid.NewV4()
 
   md5Gen.Write([]byte(uuid_v1.String() + "-" + uuid_v4.String()))
   cipherStr := md5Gen.Sum(nil)

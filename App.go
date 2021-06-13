@@ -5,7 +5,7 @@ import (
     "net"
     "net/http"
     "os"
-    "golang.org/x/sys"
+    // unix "golang.org/x/sys/unix"
 )
 
 type GoEngine struct {
@@ -44,7 +44,7 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 func (this *GoEngine) ListenUnix(addr string) {
     _ = os.Remove(addr)
-    sys.Umask(0111)
+    // unix.Umask(0111)
     ln, err := net.Listen("unix", addr)
     if nil != err {
         log.Fatal("failed to start server", err)
