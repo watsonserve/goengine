@@ -10,6 +10,13 @@ type SessionStore interface {
 	Save(string, *map[string]interface{}, int) error
 }
 
+type SessionManager interface {
+	MaxAge() int
+	Secure() bool
+	Get(req *http.Request) *Session
+	Save(session *Session, maxAge int) (*http.Cookie, error)
+}
+
 /**
  * @class  Session
  * @author JamesWatson
@@ -17,8 +24,7 @@ type SessionStore interface {
  */
 type Session struct {
 	sid   string
-	sm    *SessionManager
-	res   *http.ResponseWriter
+	sm    SessionManager
 	store map[string]interface{}
 }
 
@@ -34,48 +40,59 @@ func (this *Session) Get(key string) interface{} {
 	return nil
 }
 
-func (this *Session) Save(maxAge int) error {
+func (this *Session) Save(res http.ResponseWriter, maxAge int) error {
 	if 0 == maxAge {
-		maxAge = this.sm.MaxAge
+		maxAge = this.sm.MaxAge()
 	}
-	return this.sm.Save(this, maxAge)
+	cookie, err := this.sm.Save(this, maxAge)
+	if nil == err {
+		http.SetCookie(res, cookie)
+	}
+	return err
 }
 
 /**
- * @class  SessionManager
+ * @class  sessionManager
  * @author JamesWatson
  * @time   2017-06-10
  */
-type SessionManager struct {
+type sessionManager struct {
 	storer        SessionStore
 	sessionName   string
 	cookiePrefix  string
 	sessionPrefix string
 	domain        string
-	MaxAge        int
-	Secure        bool
+	maxAge        int
+	secure        bool
 }
 
-func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) *SessionManager {
-	return &SessionManager{
+func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) *sessionManager {
+	return &sessionManager{
 		storer:        storer,
 		sessionName:   sessName,
 		cookiePrefix:  cookiePrefix,
 		sessionPrefix: sessionPrefix,
 		domain:        domain,
-		MaxAge:        3600 * 24,
-		Secure:        true,
+		maxAge:        3600 * 24,
+		secure:        true,
 	}
 }
 
-func (this *SessionManager) getExpirationTime(maxAge int) time.Time {
+func (this *sessionManager) MaxAge() int {
+	return this.maxAge
+}
+
+func (this *sessionManager) Secure() bool {
+	return this.secure
+}
+
+func (this *sessionManager) getExpirationTime(maxAge int) time.Time {
 	return time.Now().UTC().Add(time.Duration(maxAge) * time.Second)
 }
 
-func (this *SessionManager) Get(res *http.ResponseWriter, req *http.Request) *Session {
+func (this *sessionManager) Get(req *http.Request) *Session {
 	sessionInfo := &Session{
-		sm:  this,
-		res: res,
+		sm: this,
 	}
 	var sid string
 
@@ -100,16 +117,15 @@ func (this *SessionManager) Get(res *http.ResponseWriter, req *http.Request) *Se
 	return sessionInfo
 }
 
-func (this *SessionManager) Save(session *Session, maxAge int) error {
+func (this *sessionManager) Save(session *Session, maxAge int) (*http.Cookie, error) {
 	cookie := &http.Cookie{
 		Name:     this.sessionName,
 		Value:    this.cookiePrefix + session.sid,
 		Path:     "/",
 		Domain:   this.domain,
-		Secure:   this.Secure,
+		Secure:   this.Secure(),
 		HttpOnly: true,
 		Expires:  this.getExpirationTime(maxAge),
 	}
-	http.SetCookie(*session.res, cookie)
-	return this.storer.Save(this.sessionPrefix + session.sid, &(session.store), maxAge)
+	return cookie, this.storer.Save(this.sessionPrefix+session.sid, &(session.store), maxAge)
 }
