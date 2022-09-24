@@ -6,16 +6,16 @@ import (
     "github.com/watsonserve/goengine"
 )
 
-func filter (resp http.ResponseWriter, sess *goengine.Session, req *http.Request) bool {
+func filter (resp http.ResponseWriter, req *http.Request) bool {
     // do something
     return true
 }
 
-func actionFoo (resp http.ResponseWriter, sess *goengine.Session, req *http.Request) {
+func actionFoo (resp http.ResponseWriter, req *http.Request) {
     resp.Write([]byte(""))
 }
 
-func actionBar (resp http.ResponseWriter, sess *goengine.Session, req *http.Request) {
+func actionBar (resp http.ResponseWriter, req *http.Request) {
     resp.Write([]byte(""))
 }
 

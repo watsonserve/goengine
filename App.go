@@ -38,8 +38,11 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	header := res.Header()
 	header.Set("Cache-Control", "no-cache")
+	ctx := req.Context()
+	ctx.WithValue(ctx, "session", session)
+	req = req.WithContext(ctx)
 
-	if this.Range(res, session, req) {
+	if this.Range(res, req) {
 		return
 	}
 	res.WriteHeader(404)
@@ -48,7 +51,7 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 func (this *GoEngine) ListenUnix(addr string) {
 	_ = os.Remove(addr)
-	// unix.Umask(0111)
+	// unix.Umask(0666)
 	ln, err := net.Listen("unix", addr)
 	if nil != err {
 		log.Fatal("failed to start server", err)
