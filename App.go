@@ -1,6 +1,7 @@
 package goengine
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http"
@@ -39,7 +40,7 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	header := res.Header()
 	header.Set("Cache-Control", "no-cache")
 	ctx := req.Context()
-	ctx.WithValue(ctx, "session", session)
+	ctx = context.WithValue(ctx, "session", session)
 	req = req.WithContext(ctx)
 
 	if this.Range(res, req) {
