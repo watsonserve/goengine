@@ -1,6 +1,6 @@
 module github.com/watsonserve/goengine
 
-go 1.16
+go 1.18
 
 require (
 	github.com/go-redis/redis/v8 v8.10.0
