@@ -6,10 +6,10 @@ import (
     "time"
 )
 
-type ActionFunc func(http.ResponseWriter, *Session, *http.Request)
+type ActionFunc func(http.ResponseWriter, *http.Request)
 
 // @return go on
-type FilterFunc func(http.ResponseWriter, *Session, *http.Request) bool
+type FilterFunc func(http.ResponseWriter, *http.Request) bool
 
 type NullTime struct {
     Time  time.Time

@@ -54,8 +54,8 @@ func (this *HttpRoute) UseRouter(path string, router *HttpRoute) {
 }
 
 // @return go on
-func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req *http.Request) bool {
-    if this.Range(res, session, req) {
+func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, req *http.Request) bool {
+    if this.Range(res, req) {
         // 已被拦截，停止流程
         return false
     }
@@ -72,7 +72,7 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
     }
     // 发现action
     if nil != handle {
-        handle(res, session, req)
+        handle(res, req)
         return false
     }
 
@@ -91,5 +91,5 @@ func (this *HttpRoute) ServeHTTP(res http.ResponseWriter, session *Session, req 
         goutils.Errorf("- 404 Not Found - %s\n", req.URL.Path)
         return true
     }
-    return subRouteHandle(res, session, req)
+    return subRouteHandle(res, req)
 }
