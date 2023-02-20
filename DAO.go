@@ -52,14 +52,22 @@ func (this *DAO) Prepare(index string, query string) {
 
 // mongoDB
 
-func ConnMongo(config map[string]string) *mgo.Database {
+type MongoConf struct {
+	User   string
+	Passwd string
+	Host   string
+	Port   string
+	Name   string
+}
+
+func ConnMongo(config *MongoConf) *mgo.Database {
     url := fmt.Sprintf(
         "mongodb://%s:%s@%s:%s/%s",
-        config["DBUser"],
-        config["DBPasswd"],
-        config["DBHost"],
-        config["DBPort"],
-        config["DBName"],
+        config.User,
+        config.Passwd,
+        config.Host,
+        config.Port,
+        config.Name,
     )
     dialInfo, err := mgo.ParseURL(url)
     if nil != err {
@@ -81,7 +89,7 @@ func ConnMongo(config map[string]string) *mgo.Database {
     }
     // defer sess.Close()
 
-    db := sess.DB(config["DBName"])
+    db := sess.DB(config.Name)
     if nil == db {
         panic(errors.New("MongoDB No DataBase"))
     }
