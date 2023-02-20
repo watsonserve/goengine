@@ -1,15 +1,14 @@
 package goengine
 
 import (
-	"crypto/tls"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"net"
 
 	_ "github.com/lib/pq"
-	"github.com/watsonserve/goutils"
-	mgo "gopkg.in/mgo.v2"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type DbConf struct {
@@ -61,8 +60,8 @@ func (this *DAO) Prepare(index string, query string) {
 
 // mongoDB
 
-func ConnMongo(config *DbConf) *mgo.Database {
-	url := fmt.Sprintf(
+func ConnMongo(config *DbConf) *mongo.Database {
+	uri := fmt.Sprintf(
 		"mongodb://%s:%s@%s:%s/%s",
 		config.User,
 		config.Passwd,
@@ -70,27 +69,17 @@ func ConnMongo(config *DbConf) *mgo.Database {
 		config.Port,
 		config.Name,
 	)
-	dialInfo, err := mgo.ParseURL(url)
-	if nil != err {
-		goutils.Printf("%s\n", err)
-		return nil
-	}
-
-	dialInfo.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
-		conn, err := tls.Dial("tcp", addr.String(), &tls.Config{InsecureSkipVerify: true})
-		if nil != err {
-			goutils.Printf("connect mongodb: %s\n", err.Error())
-		}
-		return conn, err
-	}
-
-	sess, err := mgo.DialWithInfo(dialInfo)
-	if nil != err {
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	if err != nil {
 		panic(err)
 	}
-	// defer sess.Close()
+	// defer func() {
+	// 	if err := client.Disconnect(context.TODO()); err != nil {
+	// 		panic(err)
+	// 	}
+	// }()
 
-	db := sess.DB(config.Name)
+	db := client.Database(config.Name)
 	if nil == db {
 		panic(errors.New("MongoDB No DataBase"))
 	}
