@@ -17,13 +17,13 @@ type DbConf struct {
 	Passwd string
 	Host   string
 	Name   string
-	Port   int
+	Port   string
 }
 
 func ConnPg(config *DbConf) *sql.DB {
 
 	pgurl := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		config.User,
 		config.Passwd,
 		config.Host,
@@ -63,7 +63,7 @@ func (this *DAO) Prepare(index string, query string) {
 
 func ConnMongo(config *DbConf) *mgo.Database {
 	url := fmt.Sprintf(
-		"mongodb://%s:%s@%s:%d/%s",
+		"mongodb://%s:%s@%s:%s/%s",
 		config.User,
 		config.Passwd,
 		config.Host,
