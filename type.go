@@ -1,9 +1,9 @@
 package goengine
 
 import (
-    "database/sql/driver"
+	"database/sql/driver"
 	"net/http"
-    "time"
+	"time"
 )
 
 type ActionFunc func(http.ResponseWriter, *http.Request)
@@ -12,18 +12,18 @@ type ActionFunc func(http.ResponseWriter, *http.Request)
 type FilterFunc func(http.ResponseWriter, *http.Request) bool
 
 type NullTime struct {
-    Time  time.Time
-    Valid bool
+	Time  time.Time
+	Valid bool
 }
 
 func (this *NullTime) Scan(value interface{}) error {
-    this.Time, this.Valid = value.(time.Time)
-    return nil
+	this.Time, this.Valid = value.(time.Time)
+	return nil
 }
 
 func (this *NullTime) Value() (driver.Value, error) {
-    if !this.Valid {
-        return nil, nil
-    }
-    return this.Time, nil
+	if !this.Valid {
+		return nil, nil
+	}
+	return this.Time, nil
 }

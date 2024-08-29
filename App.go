@@ -14,10 +14,12 @@ type GoEngine struct {
 	sessionManager SessionManager
 }
 
-func New(sessionManager SessionManager) *GoEngine {
-	return &GoEngine{
-		sessionManager: sessionManager,
+func New(router *HttpRoute, sessionManager SessionManager) *GoEngine {
+	engine := &GoEngine{sessionManager: sessionManager}
+	if nil != router {
+		engine.Use(router.ServeHTTP)
 	}
+	return engine
 }
 
 func (this *filters_t) UseRouter(router *HttpRoute) {
@@ -50,22 +52,17 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(req.URL.Path + " not found"))
 }
 
-func (this *GoEngine) ListenUnix(addr string) {
-	_ = os.Remove(addr)
+func (this *GoEngine) Listen(network, addr string) {
+	if "unix" == network {
+		_ = os.Remove(addr)
+	}
 	// unix.Umask(0666)
-	ln, err := net.Listen("unix", addr)
+	ln, err := net.Listen(network, addr)
 	if nil != err {
 		log.Fatal("failed to start server", err)
 	}
 
 	if err = http.Serve(ln, this); nil != err {
-		log.Fatal("failed to start server", err)
-	}
-}
-
-func (this *GoEngine) ListenTCP(port string) {
-	err := http.ListenAndServe(port, this)
-	if nil != err {
 		log.Fatal("failed to start server", err)
 	}
 }
