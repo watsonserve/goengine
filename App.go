@@ -33,17 +33,15 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte(err.Error()))
 	}
 
-	var session *Session
-	session = nil
 	if nil != this.sessionManager {
-		session = this.sessionManager.Get(req)
+		session := this.sessionManager.Get(req)
+		ctx := req.Context()
+		ctx = context.WithValue(ctx, "session", session)
+		req = req.WithContext(ctx)
 	}
 
 	header := res.Header()
 	header.Set("Cache-Control", "no-cache")
-	ctx := req.Context()
-	ctx = context.WithValue(ctx, "session", session)
-	req = req.WithContext(ctx)
 
 	if this.Range(res, req) {
 		return

@@ -1,54 +1,43 @@
+/**
+ * @author JamesWatson
+ * @time   2017-06-10
+ */
 package goengine
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"net/http"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 type SessionStore interface {
 	Get(string) (*map[string]interface{}, error)
-	Save(string, *map[string]interface{}, int) error
+	Save(string, string, int) error
 }
 
 type SessionManager interface {
 	MaxAge() int
 	Secure() bool
+	LoadSession(req *http.Request) SessionInfo
 	Get(req *http.Request) *Session
-	Save(session *Session, maxAge int) (*http.Cookie, error)
+	Save(session SessionInfo, maxAge int) (*http.Cookie, error)
 }
 
-/**
- * @class  Session
- * @author JamesWatson
- * @time   2017-06-10
- */
-type Session struct {
-	sid   string
-	sm    SessionManager
-	store map[string]interface{}
+func GenerateSid() string {
+	md5Gen := md5.New()
+	uuid_v1 := uuid.NewV1()
+	uuid_v4 := uuid.NewV4()
+
+	md5Gen.Write([]byte(uuid_v1.String() + "-" + uuid_v4.String()))
+	cipherStr := md5Gen.Sum(nil)
+	return hex.EncodeToString(cipherStr)
 }
 
-func (this *Session) Set(key string, value interface{}) {
-	this.store[key] = value
-}
-
-func (this *Session) Get(key string) interface{} {
-	value, found := this.store[key]
-	if found {
-		return value
-	}
-	return nil
-}
-
-func (this *Session) Save(res http.ResponseWriter, maxAge int) error {
-	if 0 == maxAge {
-		maxAge = this.sm.MaxAge()
-	}
-	cookie, err := this.sm.Save(this, maxAge)
-	if nil == err {
-		http.SetCookie(res, cookie)
-	}
-	return err
+func GetExpirationTime(maxAge int) time.Time {
+	return time.Now().UTC().Add(time.Duration(maxAge) * time.Second)
 }
 
 /**
@@ -78,54 +67,58 @@ func InitSessionManager(storer SessionStore, sessName string, cookiePrefix strin
 	}
 }
 
-func (this *sessionManager) MaxAge() int {
-	return this.maxAge
+func (sm *sessionManager) MaxAge() int {
+	return sm.maxAge
 }
 
-func (this *sessionManager) Secure() bool {
-	return this.secure
+func (sm *sessionManager) Secure() bool {
+	return sm.secure
 }
 
-func (this *sessionManager) getExpirationTime(maxAge int) time.Time {
-	return time.Now().UTC().Add(time.Duration(maxAge) * time.Second)
-}
-
-func (this *sessionManager) Get(req *http.Request) *Session {
-	sessionInfo := &Session{
-		sm: this,
-	}
-	var sid string
-
-	cookie, err := req.Cookie(this.sessionName)
-	if nil == err {
-		sid = cookie.Value[len(this.cookiePrefix):]
-		sessionInfo.sid = sid
-
-		valMap, err := this.storer.Get(this.sessionPrefix + sid)
-
-		if nil == err {
-			sessionInfo.store = *valMap
-			return sessionInfo
+func (sessMgr *sessionManager) LoadSession(req *http.Request) SessionInfo {
+	for true {
+		cookie, err := req.Cookie(sessMgr.sessionName)
+		if nil != err {
+			break
 		}
+		sid := cookie.Value[len(sessMgr.cookiePrefix):]
+		if "" == sid {
+			break
+		}
+		valMap, err := sessMgr.storer.Get(sessMgr.sessionPrefix + sid)
+		if nil != err {
+			break
+		}
+		return NewSessionInfo(sid, *valMap)
 	}
 
 	// 生成新的sid 和 session
-	sid = GenerateSid()
-	sessionInfo.sid = sid
-	sessionInfo.store = make(map[string]interface{})
-
-	return sessionInfo
+	return NewSessionInfo(GenerateSid(), make(map[string]interface{}))
 }
 
-func (this *sessionManager) Save(session *Session, maxAge int) (*http.Cookie, error) {
-	cookie := &http.Cookie{
-		Name:     this.sessionName,
-		Value:    this.cookiePrefix + session.sid,
-		Path:     "/",
-		Domain:   this.domain,
-		Secure:   this.Secure(),
-		HttpOnly: true,
-		Expires:  this.getExpirationTime(maxAge),
+func (sessMgr *sessionManager) Get(req *http.Request) *Session {
+	info := sessMgr.LoadSession(req)
+	return &Session{
+		sm:          sessMgr,
+		SessionInfo: info,
 	}
-	return cookie, this.storer.Save(this.sessionPrefix+session.sid, &(session.store), maxAge)
+}
+
+func (sm *sessionManager) Save(session SessionInfo, maxAge int) (*http.Cookie, error) {
+	sid := session.GetSid()
+	data, err := session.ToJSON()
+	if nil != err {
+		return nil, err
+	}
+	cookie := &http.Cookie{
+		Name:     sm.sessionName,
+		Value:    sm.cookiePrefix + sid,
+		Path:     "/",
+		Domain:   sm.domain,
+		Secure:   sm.Secure(),
+		HttpOnly: true,
+		Expires:  GetExpirationTime(maxAge),
+	}
+
+	return cookie, sm.storer.Save(sm.sessionPrefix+sid, string(data), maxAge)
 }
