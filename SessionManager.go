@@ -15,7 +15,7 @@ import (
 
 type SessionStore interface {
 	Get(string) (*map[string]interface{}, error)
-	Save(string, string, int) error
+	Save(string, []byte, int) error
 }
 
 type SessionManager interface {
@@ -120,5 +120,5 @@ func (sm *sessionManager) Save(session SessionInfo, maxAge int) (*http.Cookie, e
 		Expires:  GetExpirationTime(maxAge),
 	}
 
-	return cookie, sm.storer.Save(sm.sessionPrefix+sid, string(data), maxAge)
+	return cookie, sm.storer.Save(sm.sessionPrefix+sid, data, maxAge)
 }

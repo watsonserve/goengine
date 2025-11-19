@@ -62,10 +62,6 @@ func (rs *RedisStore) Get(key string) (*map[string]interface{}, error) {
 	return &store, err
 }
 
-func (rs *RedisStore) Save(key string, store *map[string]interface{}, maxAge int) error {
-	buf, err := json.Marshal(store)
-	if nil != err {
-		return err
-	}
-	return rs.client.Set(ctx, key, string(buf), time.Duration(maxAge)*time.Second).Err()
+func (rs *RedisStore) Save(key string, json []byte, maxAge int) error {
+	return rs.client.Set(ctx, key, string(json), time.Duration(maxAge)*time.Second).Err()
 }
