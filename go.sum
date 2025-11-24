@@ -59,8 +59,8 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/watsonserve/goutils v0.1.18 h1:GsO+9LtgDJNL1e6hQHC9bB0tRPDfYNxzyRfTEV4VRbk=
-github.com/watsonserve/goutils v0.1.18/go.mod h1:jKpQDNhuTji5FnQwtlmtFVKCzura1VhaqvNUueCx5nY=
+github.com/watsonserve/goutils v0.1.22 h1:gv5gVwDg+cCOvmJkUgpY0KuqteGRZmVv7Nps7ZQotiU=
+github.com/watsonserve/goutils v0.1.22/go.mod h1:jKpQDNhuTji5FnQwtlmtFVKCzura1VhaqvNUueCx5nY=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.1.2 h1:FHX5I5B4i4hKRVRBCFRxq1iQRej7WO3hhBuJf+UUySY=

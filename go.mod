@@ -8,7 +8,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/lib/pq v1.10.9
 	github.com/satori/go.uuid v1.2.0
-	github.com/watsonserve/goutils v0.1.18
+	github.com/watsonserve/goutils v0.1.22
 	go.mongodb.org/mongo-driver v1.16.1
 )
 
