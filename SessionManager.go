@@ -14,7 +14,7 @@ import (
 )
 
 type SessionStore interface {
-	Get(string) (*map[string]interface{}, error)
+	Get(string) (*map[string]string, error)
 	Save(string, []byte, int) error
 }
 
@@ -93,7 +93,7 @@ func (sessMgr *sessionManager) LoadSession(req *http.Request) SessionInfo {
 	}
 
 	// 生成新的sid 和 session
-	return NewSessionInfo(GenerateSid(), make(map[string]interface{}))
+	return NewSessionInfo(GenerateSid(), make(map[string]string))
 }
 
 func (sessMgr *sessionManager) Get(req *http.Request) *Session {
@@ -109,6 +109,9 @@ func (sm *sessionManager) Save(session SessionInfo, maxAge int) (*http.Cookie, e
 	data, err := session.ToJSON()
 	if nil != err {
 		return nil, err
+	}
+	if maxAge < 0 {
+		maxAge = sm.MaxAge()
 	}
 	cookie := &http.Cookie{
 		Name:     sm.sessionName,

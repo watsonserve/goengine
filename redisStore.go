@@ -14,7 +14,7 @@ type RedisStore struct {
 
 var ctx = context.Background()
 
-func NewRedisStore(Addr string, Password string, DB int) *RedisStore {
+func NewRedisStore(Addr string, Password string, DB int) SessionStore {
 	client := redis.NewClient(&redis.Options{
 		Addr:     Addr,
 		Password: Password, // no password set
@@ -47,8 +47,8 @@ func (rs *RedisStore) GetOnce(key string) (*map[string]interface{}, error) {
 	return &store, err
 }
 
-func (rs *RedisStore) Get(key string) (*map[string]interface{}, error) {
-	store := make(map[string]interface{})
+func (rs *RedisStore) Get(key string) (*map[string]string, error) {
+	store := make(map[string]string)
 	jsonSession, err := rs.client.Get(ctx, key).Result()
 
 	if nil == err {
