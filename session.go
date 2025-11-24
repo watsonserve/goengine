@@ -13,13 +13,6 @@ type Session struct {
 	sm SessionManager
 }
 
-func (sess *Session) Save(res http.ResponseWriter, maxAge int) error {
-	if 0 == maxAge {
-		maxAge = sess.sm.MaxAge()
-	}
-	cookie, err := sess.sm.Save(sess.SessionInfo, maxAge)
-	if nil == err {
-		http.SetCookie(res, cookie)
-	}
-	return err
+func (sess *Session) Save(resp http.ResponseWriter, maxAge int) error {
+	return sess.sm.Save(resp, sess.SessionInfo, maxAge)
 }

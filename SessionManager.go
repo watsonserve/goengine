@@ -15,6 +15,10 @@ import (
 
 type SessionStore interface {
 	Get(string) (*map[string]string, error)
+	/**
+	 * @param json session data in json format, if nil or empty, delete the key
+	 * @param maxAge in seconds, if maxAge ==0, no expiration; if maxAge <0, delete the key
+	 */
 	Save(string, []byte, int) error
 }
 
@@ -23,7 +27,7 @@ type SessionManager interface {
 	Secure() bool
 	LoadSession(req *http.Request) SessionInfo
 	Get(req *http.Request) *Session
-	Save(session SessionInfo, maxAge int) (*http.Cookie, error)
+	Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error
 }
 
 func GenerateSid() string {
@@ -104,24 +108,37 @@ func (sessMgr *sessionManager) Get(req *http.Request) *Session {
 	}
 }
 
-func (sm *sessionManager) Save(session SessionInfo, maxAge int) (*http.Cookie, error) {
+/**
+ * @param resp http response writer
+ * @param session session info
+ * @param maxAge in seconds, if maxAge ==0, delete the key; if maxAge <0, use default maxAge
+ */
+func (sm *sessionManager) Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error {
 	sid := session.GetSid()
 	data, err := session.ToJSON()
 	if nil != err {
-		return nil, err
-	}
-	if maxAge < 0 {
-		maxAge = sm.MaxAge()
-	}
-	cookie := &http.Cookie{
-		Name:     sm.sessionName,
-		Value:    sm.cookiePrefix + sid,
-		Path:     "/",
-		Domain:   sm.domain,
-		Secure:   sm.Secure(),
-		HttpOnly: true,
-		Expires:  GetExpirationTime(maxAge),
+		return err
 	}
 
-	return cookie, sm.storer.Save(sm.sessionPrefix+sid, data, maxAge)
+	switch {
+	case maxAge < 0:
+		maxAge = sm.MaxAge()
+	case 0 == maxAge:
+		maxAge = -1
+	}
+
+	err = sm.storer.Save(sm.sessionPrefix+sid, data, maxAge)
+	if nil == err {
+		cookie := &http.Cookie{
+			Name:     sm.sessionName,
+			Value:    sm.cookiePrefix + sid,
+			Path:     "/",
+			Domain:   sm.domain,
+			Secure:   sm.Secure(),
+			HttpOnly: true,
+			Expires:  GetExpirationTime(maxAge),
+		}
+		http.SetCookie(resp, cookie)
+	}
+	return err
 }

@@ -62,6 +62,13 @@ func (rs *RedisStore) Get(key string) (*map[string]string, error) {
 	return &store, err
 }
 
+/**
+ * @param json session data in json format, if nil or empty, delete the key
+ * @param maxAge in seconds, if maxAge ==0, no expiration; if maxAge <0, delete the key
+ */
 func (rs *RedisStore) Save(key string, json []byte, maxAge int) error {
+	if maxAge < 0 || nil == json || 0 == len(json) {
+		return rs.client.Del(ctx, key).Err()
+	}
 	return rs.client.Set(ctx, key, string(json), time.Duration(maxAge)*time.Second).Err()
 }
