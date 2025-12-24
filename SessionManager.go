@@ -59,7 +59,7 @@ type sessionManager struct {
 	secure        bool
 }
 
-func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) *sessionManager {
+func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) SessionManager {
 	return &sessionManager{
 		storer:        storer,
 		sessionName:   sessName,

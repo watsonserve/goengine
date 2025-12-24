@@ -11,9 +11,9 @@ import (
 
 type SessionInfo interface {
 	GetSid() string
-	Get(key string) interface{}
+	Get(key string) map[string]interface{}
 	Set(key string, value interface{}) error
-	Load(key string, v any) error
+	Load(key string, v *any) error
 	ToJSON() ([]byte, error)
 }
 
@@ -42,7 +42,7 @@ func (si *sessionInfo) Set(key string, value interface{}) error {
 	return err
 }
 
-func (si *sessionInfo) Get(key string) interface{} {
+func (si *sessionInfo) Get(key string) map[string]interface{} {
 	value, found := si.store[key]
 	if found {
 		ret := make(map[string]interface{})
@@ -53,12 +53,12 @@ func (si *sessionInfo) Get(key string) interface{} {
 	return nil
 }
 
-func (si *sessionInfo) Load(key string, v any) error {
+func (si *sessionInfo) Load(key string, v *any) error {
 	value, found := si.store[key]
 	if !found {
 		return errors.New("not found")
 	}
-	return json.Unmarshal([]byte(value), &v)
+	return json.Unmarshal([]byte(value), v)
 }
 
 func (si *sessionInfo) ToJSON() ([]byte, error) {
