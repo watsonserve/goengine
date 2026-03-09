@@ -1,7 +1,6 @@
 package goengine
 
 import (
-	"context"
 	"log"
 	"net"
 	"net/http"
@@ -11,11 +10,10 @@ import (
 // unix "golang.org/x/sys/unix"
 type GoEngine struct {
 	filters_t
-	sessionManager SessionManager
 }
 
-func New(router *HttpRoute, sessionManager SessionManager) *GoEngine {
-	engine := &GoEngine{sessionManager: sessionManager}
+func New(router *HttpRoute) *GoEngine {
+	engine := &GoEngine{}
 	if nil != router {
 		engine.Use(router.ServeHTTP)
 	}
@@ -31,13 +29,6 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	if nil != err {
 		res.WriteHeader(500)
 		res.Write([]byte(err.Error()))
-	}
-
-	if nil != this.sessionManager {
-		session := this.sessionManager.Get(req)
-		ctx := req.Context()
-		ctx = context.WithValue(ctx, "session", session)
-		req = req.WithContext(ctx)
 	}
 
 	header := res.Header()

@@ -26,6 +26,6 @@ func ExampleGoengine() {
 	router.SetWith("^/foo/.+", actionFoo)
 	router.Set("/bar", actionBar)
 
-	engine := goengine.New(router, nil)
+	engine := goengine.New(router)
 	engine.Listen("tcp", ":7070")
 }

@@ -13,7 +13,7 @@ type SessionInfo interface {
 	GetSid() string
 	Get(key string) interface{}
 	Set(key string, value interface{}) error
-	Load(key string, v any) error
+	Load(key string, v interface{}) error
 	ToJSON() ([]byte, error)
 }
 
@@ -53,7 +53,7 @@ func (si *sessionInfo) Get(key string) interface{} {
 	return nil
 }
 
-func (si *sessionInfo) Load(key string, v any) error {
+func (si *sessionInfo) Load(key string, v interface{}) error {
 	value, found := si.store[key]
 	if !found {
 		return errors.New("not found")

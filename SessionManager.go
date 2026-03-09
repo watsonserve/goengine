@@ -8,6 +8,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -25,8 +27,9 @@ type SessionStore interface {
 type SessionManager interface {
 	MaxAge() int
 	Secure() bool
-	LoadSession(req *http.Request) SessionInfo
-	Get(req *http.Request) *Session
+	LoadSession(resp http.ResponseWriter, req *http.Request) SessionInfo
+	UpData(session SessionInfo, maxAge int) error
+	UpMaxAge(resp http.ResponseWriter, maxAge int) error
 	Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error
 }
 
@@ -59,7 +62,7 @@ type sessionManager struct {
 	secure        bool
 }
 
-func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) *sessionManager {
+func InitSessionManager(storer SessionStore, sessName string, cookiePrefix string, sessionPrefix string, domain string) SessionManager {
 	return &sessionManager{
 		storer:        storer,
 		sessionName:   sessName,
@@ -79,17 +82,17 @@ func (sm *sessionManager) Secure() bool {
 	return sm.secure
 }
 
-func (sessMgr *sessionManager) LoadSession(req *http.Request) SessionInfo {
+func (sm *sessionManager) loadSession(req *http.Request) SessionInfo {
 	for true {
-		cookie, err := req.Cookie(sessMgr.sessionName)
+		cookie, err := req.Cookie(sm.sessionName)
 		if nil != err {
 			break
 		}
-		sid := cookie.Value[len(sessMgr.cookiePrefix):]
+		sid := cookie.Value[len(sm.cookiePrefix):]
 		if "" == sid {
 			break
 		}
-		valMap, err := sessMgr.storer.Get(sessMgr.sessionPrefix + sid)
+		valMap, err := sm.storer.Get(sm.sessionPrefix + sid)
 		if nil != err {
 			break
 		}
@@ -100,45 +103,99 @@ func (sessMgr *sessionManager) LoadSession(req *http.Request) SessionInfo {
 	return NewSessionInfo(GenerateSid(), make(map[string]string))
 }
 
-func (sessMgr *sessionManager) Get(req *http.Request) *Session {
-	info := sessMgr.LoadSession(req)
-	return &Session{
-		sm:          sessMgr,
-		SessionInfo: info,
+func (sm *sessionManager) LoadSession(resp http.ResponseWriter, req *http.Request) SessionInfo {
+	session := sm.loadSession(req)
+	sid := session.GetSid()
+
+	cookie := &http.Cookie{
+		Name:     sm.sessionName,
+		Value:    sm.cookiePrefix + sid,
+		Path:     "/",
+		Domain:   req.Host,
+		Secure:   sm.Secure(),
+		HttpOnly: true,
+		Expires:  GetExpirationTime(sm.MaxAge()),
 	}
+	http.SetCookie(resp, cookie)
+	return session
 }
 
 /**
  * @param resp http response writer
  * @param session session info
- * @param maxAge in seconds, if maxAge ==0, delete the key; if maxAge <0, use default maxAge
+ * @param maxAge in seconds, if maxAge < 1 use default maxAge
  */
-func (sm *sessionManager) Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error {
+func (sm *sessionManager) UpData(session SessionInfo, maxAge int) error {
 	sid := session.GetSid()
 	data, err := session.ToJSON()
+	if maxAge < 1 {
+		maxAge = sm.maxAge
+	}
+	if nil == err {
+		err = sm.storer.Save(sm.sessionPrefix+sid, data, maxAge)
+	}
+	return err
+}
+
+func (sm *sessionManager) UpMaxAge(resp http.ResponseWriter, maxAge int) error {
+	header := resp.Header()
+	dirtyCookies := header["Set-Cookie"]
+
+	str := "" // cookie or domain
+	for idx, item := range dirtyCookies {
+		if strings.HasPrefix(item, sm.sessionName+"=") {
+			str = item
+			header["Set-Cookie"] = slices.Delete(dirtyCookies, idx, idx+1)
+			break
+		}
+	}
+	cookie, err := http.ParseSetCookie(str)
 	if nil != err {
 		return err
 	}
-
-	switch {
-	case maxAge < 0:
-		maxAge = sm.MaxAge()
-	case 0 == maxAge:
-		maxAge = -1
+	if maxAge < 1 {
+		maxAge = sm.maxAge
 	}
+	cookie.Expires = GetExpirationTime(maxAge)
 
-	err = sm.storer.Save(sm.sessionPrefix+sid, data, maxAge)
+	http.SetCookie(resp, cookie)
+	return nil
+}
+
+func (sm *sessionManager) Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error {
+	err := sm.UpData(session, maxAge)
 	if nil == err {
-		cookie := &http.Cookie{
-			Name:     sm.sessionName,
-			Value:    sm.cookiePrefix + sid,
-			Path:     "/",
-			Domain:   sm.domain,
-			Secure:   sm.Secure(),
-			HttpOnly: true,
-			Expires:  GetExpirationTime(maxAge),
-		}
-		http.SetCookie(resp, cookie)
+		err = sm.UpMaxAge(resp, maxAge)
 	}
 	return err
+}
+
+func (sm *sessionManager) Delete(resp http.ResponseWriter, req *http.Request) error {
+	cookie, err := req.Cookie(sm.sessionName)
+
+	switch err {
+	case nil:
+	case http.ErrNoCookie:
+		return nil
+	default:
+		return err
+	}
+
+	sid := cookie.Value[len(sm.cookiePrefix):]
+	if "" == sid {
+		return nil
+	}
+
+	sm.storer.Save(sm.sessionPrefix+sid, nil, -1)
+	cookie = &http.Cookie{
+		Name:     sm.sessionName,
+		Value:    sm.cookiePrefix + sid,
+		Path:     "/",
+		Domain:   req.Host,
+		Secure:   sm.Secure(),
+		HttpOnly: true,
+		Expires:  GetExpirationTime(0),
+	}
+	http.SetCookie(resp, cookie)
+	return nil
 }
