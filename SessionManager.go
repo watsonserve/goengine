@@ -31,6 +31,7 @@ type SessionManager interface {
 	UpData(session SessionInfo, maxAge int) error
 	UpMaxAge(resp http.ResponseWriter, maxAge int) error
 	Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error
+	Delete(resp http.ResponseWriter, req *http.Request) error
 }
 
 func GenerateSid() string {
