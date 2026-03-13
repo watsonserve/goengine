@@ -14,7 +14,7 @@ type RedisStore struct {
 
 var ctx = context.Background()
 
-func NewRedisStore(Addr string, Password string, DB int) SessionStore {
+func NewRedisStore(Addr string, Password string, DB int) *RedisStore {
 	client := redis.NewClient(&redis.Options{
 		Addr:     Addr,
 		Password: Password, // no password set
