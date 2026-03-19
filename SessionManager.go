@@ -16,7 +16,7 @@ import (
 )
 
 type SessionStore interface {
-	Get(string) (*map[string]string, error)
+	Get(string, interface{}) error
 	/**
 	 * @param json session data in json format, if nil or empty, delete the key
 	 * @param maxAge in seconds, if maxAge ==0, no expiration; if maxAge <0, delete the key
@@ -84,6 +84,7 @@ func (sm *sessionManager) Secure() bool {
 }
 
 func (sm *sessionManager) loadSession(req *http.Request) SessionInfo {
+	valMap := make(map[string]string)
 	for true {
 		cookie, err := req.Cookie(sm.sessionName)
 		if nil != err {
@@ -93,15 +94,15 @@ func (sm *sessionManager) loadSession(req *http.Request) SessionInfo {
 		if "" == sid {
 			break
 		}
-		valMap, err := sm.storer.Get(sm.sessionPrefix + sid)
+		err = sm.storer.Get(sm.sessionPrefix+sid, &valMap)
 		if nil != err {
 			break
 		}
-		return NewSessionInfo(sid, *valMap)
+		return NewSessionInfo(sid, valMap)
 	}
 
 	// 生成新的sid 和 session
-	return NewSessionInfo(GenerateSid(), make(map[string]string))
+	return NewSessionInfo(GenerateSid(), valMap)
 }
 
 func (sm *sessionManager) LoadSession(resp http.ResponseWriter, req *http.Request) SessionInfo {

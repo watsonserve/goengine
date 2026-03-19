@@ -28,8 +28,7 @@ func NewRedisStore(Addr string, Password string, DB int) *RedisStore {
 	}
 }
 
-func (rs *RedisStore) GetOnce(key string) (*map[string]interface{}, error) {
-	store := make(map[string]interface{})
+func (rs *RedisStore) GetOnce(key string, store interface{}) error {
 	jsonSession, err := rs.client.Eval(
 		ctx,
 		"local ret = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return ret",
@@ -37,29 +36,28 @@ func (rs *RedisStore) GetOnce(key string) (*map[string]interface{}, error) {
 	).Text()
 
 	if nil == err {
-		json.Unmarshal([]byte(jsonSession), &store)
+		json.Unmarshal([]byte(jsonSession), store)
 	}
 
 	if redis.Nil == err {
 		err = nil
 	}
 
-	return &store, err
+	return err
 }
 
-func (rs *RedisStore) Get(key string) (*map[string]string, error) {
-	store := make(map[string]string)
+func (rs *RedisStore) Get(key string, store interface{}) error {
 	jsonSession, err := rs.client.Get(ctx, key).Result()
 
 	if nil == err {
-		json.Unmarshal([]byte(jsonSession), &store)
+		json.Unmarshal([]byte(jsonSession), store)
 	}
 
 	if redis.Nil == err {
 		err = nil
 	}
 
-	return &store, err
+	return err
 }
 
 /**
