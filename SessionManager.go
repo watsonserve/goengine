@@ -22,6 +22,7 @@ type SessionStore interface {
 	 * @param maxAge in seconds, if maxAge ==0, no expiration; if maxAge <0, delete the key
 	 */
 	Save(string, []byte, int) error
+	Expire(string, int) error
 }
 
 type SessionManager interface {
@@ -29,7 +30,7 @@ type SessionManager interface {
 	Secure() bool
 	LoadSession(resp http.ResponseWriter, req *http.Request) SessionInfo
 	UpData(session SessionInfo, maxAge int) error
-	UpMaxAge(resp http.ResponseWriter, maxAge int) error
+	UpMaxAge(resp http.ResponseWriter, session SessionInfo, maxAge int) error
 	Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error
 	Delete(resp http.ResponseWriter, req *http.Request) error
 }
@@ -139,7 +140,7 @@ func (sm *sessionManager) UpData(session SessionInfo, maxAge int) error {
 	return err
 }
 
-func (sm *sessionManager) UpMaxAge(resp http.ResponseWriter, maxAge int) error {
+func (sm *sessionManager) upCookieExpire(resp http.ResponseWriter, maxAge int) error {
 	header := resp.Header()
 	dirtyCookies := header["Set-Cookie"]
 
@@ -164,10 +165,22 @@ func (sm *sessionManager) UpMaxAge(resp http.ResponseWriter, maxAge int) error {
 	return nil
 }
 
+func (sm *sessionManager) UpMaxAge(resp http.ResponseWriter, session SessionInfo, maxAge int) error {
+	if maxAge < 1 {
+		maxAge = sm.maxAge
+	}
+	sid := session.GetSid()
+	err := sm.storer.Expire(sm.sessionPrefix+sid, maxAge)
+	if nil == err {
+		err = sm.upCookieExpire(resp, maxAge)
+	}
+	return err
+}
+
 func (sm *sessionManager) Save(resp http.ResponseWriter, session SessionInfo, maxAge int) error {
 	err := sm.UpData(session, maxAge)
 	if nil == err {
-		err = sm.UpMaxAge(resp, maxAge)
+		err = sm.upCookieExpire(resp, maxAge)
 	}
 	return err
 }

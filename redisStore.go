@@ -3,6 +3,7 @@ package goengine
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -69,4 +70,11 @@ func (rs *RedisStore) Save(key string, json []byte, maxAge int) error {
 		return rs.client.Del(ctx, key).Err()
 	}
 	return rs.client.Set(ctx, key, string(json), time.Duration(maxAge)*time.Second).Err()
+}
+
+func (rs *RedisStore) Expire(key string, maxAge int) error {
+	if maxAge < 1 {
+		return errors.New("maxAge must be greater than 0")
+	}
+	return rs.client.Expire(ctx, key, time.Duration(maxAge)*time.Second).Err()
 }
