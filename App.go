@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+
+	"github.com/watsonserve/goutils"
 )
 
 // unix "golang.org/x/sys/unix"
@@ -39,6 +41,7 @@ func (this *GoEngine) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 	res.WriteHeader(404)
 	res.Write([]byte(req.URL.Path + " not found"))
+	goutils.Errorf("- 404 Not Found - %s\n", req.URL.Path)
 }
 
 func (this *GoEngine) Listen(network, addr string) {

@@ -26,19 +26,28 @@ type sub_router_t struct {
 
 type HttpRoute struct {
 	filters_t
-	index     map[string]ActionFunc
+	index     map[string]map[string]ActionFunc
 	catchers  []*catcher_t
 	subRouter []*sub_router_t
 }
 
 func InitHttpRoute() *HttpRoute {
 	return &HttpRoute{
-		index: make(map[string]ActionFunc),
+		index: make(map[string]map[string]ActionFunc),
 	}
 }
 
+func (hr *HttpRoute) SetByMethod(path, method string, handle ActionFunc) {
+	r := hr.index[path]
+	if nil != r && len(r) > 0 {
+		r[""] = handle
+		return
+	}
+	hr.index[path] = map[string]ActionFunc{"": handle}
+}
+
 func (hr *HttpRoute) Set(path string, handle ActionFunc) {
-	hr.index[path] = handle
+	hr.SetByMethod(path, "", handle)
 }
 
 func (hr *HttpRoute) SetWith(path string, handle ActionFunc) {
@@ -76,7 +85,20 @@ func (hr *HttpRoute) ServeHTTP(res http.ResponseWriter, req *http.Request) bool 
 		return false
 	}
 	urlPath := req.URL.Path
-	handle := hr.index[urlPath]
+	method := req.Method
+	r := hr.index[urlPath]
+
+	handle := r[method]
+	if nil == handle {
+		handle = r[""]
+	}
+	if 0 < len(r) && nil == handle {
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		res.Write([]byte(method + " " + req.URL.Path + " Method Not Allowed"))
+		goutils.Errorf("- 405 Method Not Allowed - %s\n", req.URL.Path)
+		return false
+	}
+
 	// 正则路由
 	if nil == handle {
 		for _, catcher := range hr.catchers {
@@ -104,7 +126,6 @@ func (hr *HttpRoute) ServeHTTP(res http.ResponseWriter, req *http.Request) bool 
 	}
 	// 没有匹配的子路由
 	if nil == subRouteHandle {
-		goutils.Errorf("- 404 Not Found - %s\n", req.URL.Path)
 		return true
 	}
 	return subRouteHandle(res, req)
