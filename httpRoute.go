@@ -40,10 +40,10 @@ func InitHttpRoute() *HttpRoute {
 func (hr *HttpRoute) SetByMethod(path, method string, handle ActionFunc) {
 	r := hr.index[path]
 	if nil != r && len(r) > 0 {
-		r[""] = handle
+		r[method] = handle
 		return
 	}
-	hr.index[path] = map[string]ActionFunc{"": handle}
+	hr.index[path] = map[string]ActionFunc{method: handle}
 }
 
 func (hr *HttpRoute) Set(path string, handle ActionFunc) {
